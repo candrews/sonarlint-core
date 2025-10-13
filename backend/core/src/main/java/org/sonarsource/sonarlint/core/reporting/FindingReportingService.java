@@ -81,10 +81,11 @@ public class FindingReportingService {
   private final ApplicationEventPublisher eventPublisher;
   private final StorageService storageService;
   private final boolean isStreamingEnabled;
+  private final AiCodeFixService aiCodeFixService;
 
   public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService, SeverityModeService severityModeService,
     PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ApplicationEventPublisher eventPublisher, StorageService storageService,
-    InitializeParams initializeParams) {
+    InitializeParams initializeParams, AiCodeFixService aiCodeFixService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.newCodeService = newCodeService;
@@ -93,6 +94,7 @@ public class FindingReportingService {
     this.eventPublisher = eventPublisher;
     this.storageService = storageService;
     this.isStreamingEnabled = initializeParams.getBackendCapabilities().contains(BackendCapability.ISSUE_STREAMING);
+    this.aiCodeFixService = aiCodeFixService;
   }
 
   public void resetFindingsForFiles(String configurationScopeId, Set<URI> files) {
@@ -144,7 +146,7 @@ public class FindingReportingService {
     var connectionId = effectiveBinding.map(Binding::connectionId).orElse(null);
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
     var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
-    var aiCodeFixFeature = effectiveBinding.flatMap(b -> AiCodeFixService.getFeature(storageService, b));
+    var aiCodeFixFeature = effectiveBinding.flatMap(aiCodeFixService::getFeature);
     var issuesToRaise = issuesPerFileUri.entrySet().stream()
       .filter(e -> filesPerAnalysis.get(analysisId).contains(e.getKey()))
       .map(e -> Map.entry(e.getKey(),
@@ -165,7 +167,7 @@ public class FindingReportingService {
     var connectionId = effectiveBinding.map(Binding::connectionId).orElse(null);
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
     var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
-    var aiCodeFixFeature = effectiveBinding.flatMap(b -> AiCodeFixService.getFeature(storageService, b));
+    var aiCodeFixFeature = effectiveBinding.flatMap(aiCodeFixService::getFeature);
     var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition, isMQRMode, aiCodeFixFeature);
     this.eventPublisher.publishEvent(new IssuesRaisedEvent(issuesToRaise.values().stream().flatMap(List::stream).toList()));
     var hotspotsToRaise = getHotspotsToRaise(hotspotsToReport, newCodeDefinition, isMQRMode);

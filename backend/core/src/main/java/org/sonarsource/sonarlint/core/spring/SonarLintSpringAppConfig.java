@@ -51,6 +51,9 @@ import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringInitializationParams;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
+import org.sonarsource.sonarlint.core.commons.storage.StorageInitParams;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
+import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.AnalyzeFileListRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
@@ -253,6 +256,21 @@ public class SonarLintSpringAppConfig {
       params.getTelemetryConstantAttributes().getProductKey(),
       params.getTelemetryConstantAttributes().getProductVersion(),
       params.getTelemetryConstantAttributes().getIdeVersion());
+  }
+
+  @Bean
+  StorageInitParams provideStorageInitParams(InitializeParams params) {
+    return new StorageInitParams(params.getStorageRoot());
+  }
+
+  @Bean(destroyMethod = "shutdown")
+  SonarLintDatabase provideSonarLintDatabase(StorageInitParams storageInitParams) {
+    return new SonarLintDatabase(storageInitParams);
+  }
+
+  @Bean
+  AiCodeFixRepository provideAiCodeFixRepository(SonarLintDatabase sonarLintDatabase) {
+    return new AiCodeFixRepository(sonarLintDatabase);
   }
 
   private static HttpConfig adapt(HttpConfigurationDto dto, @Nullable Path sonarlintUserHome) {
