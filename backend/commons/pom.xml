@@ -15,7 +15,6 @@
       <artifactId>jsr305</artifactId>
       <scope>provided</scope>
     </dependency>
-    <!-- Database driver: H2 -->
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>

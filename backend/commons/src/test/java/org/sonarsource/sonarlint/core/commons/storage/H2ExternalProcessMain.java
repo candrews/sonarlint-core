@@ -49,7 +49,7 @@ public class H2ExternalProcessMain {
     });
 
     var storageRoot = Path.of(args[0]);
-    var db = new SonarLintDatabase(new StorageInitParams(storageRoot));
+    var db = new SonarLintDatabase(new StorageInitParams(storageRoot, SonarLintDatabaseMode.FILE, true));
 
     int attempts = 10;
     Exception last = null;

@@ -32,6 +32,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.commons.storage.StorageInitParams;
 import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
@@ -67,7 +68,7 @@ class AiCodeFixServiceTest {
   @Test
   void getFeature_reads_from_h2_repository() {
     // Arrange: real H2 database and repository
-    db = new SonarLintDatabase(new StorageInitParams(tempDir));
+    db = new SonarLintDatabase(new StorageInitParams(tempDir, SonarLintDatabaseMode.FILE, true));
     var repo = new AiCodeFixRepository(db);
 
     var connectionId = "conn-1";

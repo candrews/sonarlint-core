@@ -20,12 +20,15 @@
 package org.sonarsource.sonarlint.core.commons.storage;
 
 import jakarta.inject.Inject;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.h2.jdbcx.JdbcConnectionPool;
+import org.h2.tools.Server;
 import org.jooq.DSLContext;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
@@ -34,12 +37,13 @@ public final class SonarLintDatabase {
 
   private final JdbcConnectionPool dataSource;
   private final DSLContext dsl;
+  private Server tcpServer;
 
   @Inject
   public SonarLintDatabase(StorageInitParams storageInitParams) {
     JdbcConnectionPool ds;
     try {
-      String mode = System.getProperty("sonarlint.db.mode", "file");
+      var mode = System.getProperty("sonarlint.db.mode", "file");
       String url;
       if ("mem".equalsIgnoreCase(mode)) {
         // In-memory mode for tests: keep DB alive until JVM exits to allow multiple connections
@@ -48,7 +52,7 @@ public final class SonarLintDatabase {
         var baseDir = storageInitParams.storageRoot().resolve("h2");
         Files.createDirectories(baseDir);
         var dbBasePath = baseDir.resolve("sonarlint").toAbsolutePath();
-        url = "jdbc:h2:file:" + dbBasePath;
+        url = "jdbc:h2:" + dbBasePath + ";AUTO_SERVER=TRUE";
       }
       LOG.debug("Initializing H2Database with URL {}", url);
       ds = JdbcConnectionPool.create(url, "sa", "");
@@ -99,3 +103,4 @@ public final class SonarLintDatabase {
     }
   }
 }
+

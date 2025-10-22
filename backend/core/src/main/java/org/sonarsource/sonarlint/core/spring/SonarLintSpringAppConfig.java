@@ -51,6 +51,7 @@ import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringInitializationParams;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
 import org.sonarsource.sonarlint.core.commons.storage.StorageInitParams;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
@@ -260,7 +261,7 @@ public class SonarLintSpringAppConfig {
 
   @Bean
   StorageInitParams provideStorageInitParams(InitializeParams params) {
-    return new StorageInitParams(params.getStorageRoot());
+    return new StorageInitParams(params.getStorageRoot(), SonarLintDatabaseMode.FILE, true);
   }
 
   @Bean(destroyMethod = "shutdown")

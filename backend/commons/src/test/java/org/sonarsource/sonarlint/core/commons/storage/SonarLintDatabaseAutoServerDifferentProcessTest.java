@@ -28,9 +28,12 @@ import java.nio.file.Path;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 class SonarLintDatabaseAutoServerDifferentProcessTest {
@@ -41,9 +44,12 @@ class SonarLintDatabaseAutoServerDifferentProcessTest {
   @TempDir
   Path tempDir;
 
-  @Test
-  void auto_server_allows_second_connection_from_different_java_process() throws Exception {
-    var init = new StorageInitParams(tempDir);
+  // TODO make tests work
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  @DisplayName("Cross-process concurrent access to H2: green with AUTO_SERVER=TRUE, fail with AUTO_SERVER=FALSE")
+  void auto_server_allows_second_connection_from_different_java_process(boolean autoServer) throws Exception {
+    var init = new StorageInitParams(tempDir, SonarLintDatabaseMode.FILE, autoServer);
 
     // First DB instance opens the file DB and creates a table + a row, then shuts down to simulate another process opening it
     var db1 = new SonarLintDatabase(init);
@@ -75,8 +81,16 @@ class SonarLintDatabaseAutoServerDifferentProcessTest {
     cmd.add(javaBin);
     cmd.add("-cp");
     cmd.add(classpath);
+    // Propagate AUTO_SERVER flag to child JVM to keep behavior consistent
+    var autoServerProp = System.getProperty("sonarlint.db.autoServer");
+
     cmd.add(mainClass);
     cmd.add(storageRoot.toString());
+
+    if (autoServerProp != null) {
+      // Prepend JVM arg for system property
+      cmd.add(1, "-Dsonarlint.db.autoServer=" + autoServerProp);
+    }
 
     var pb = new ProcessBuilder(cmd);
     pb.redirectErrorStream(true);

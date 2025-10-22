@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage;
 
-import java.nio.file.Path;
-
-public record StorageInitParams(Path storageRoot, SonarLintDatabaseMode sonarLintDatabaseMode, boolean autoServerModeEnabled) {
+public enum SonarLintDatabaseMode {
+  FILE, MEM
 }
