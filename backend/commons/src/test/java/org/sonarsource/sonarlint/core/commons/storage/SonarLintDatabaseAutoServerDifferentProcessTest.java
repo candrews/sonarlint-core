@@ -59,22 +59,24 @@ class SonarLintDatabaseAutoServerDifferentProcessTest {
     // Start external process while db1 is still open
     var externalProcessStarter = new Thread(() -> {
       try {
-        System.out.println("Main process starting inserts, PID: " + ProcessHandle.current().pid());
+        System.out.println("Main process PID: " + ProcessHandle.current().pid());
+        System.out.println("External process starting. ");
         var process = startExternalProcess(tempDir, autoServer);
         // Wait for external process to complete
         processRef.set(process);
-        System.out.println("Main process finished inserts");
+        System.out.println("External process launched");
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
     });
     externalProcessStarter.start();
 
+    Thread.sleep(300);
     // Insert records in parallel with the external process
     var insertThread = new Thread(() -> {
       try {
         System.out.println("Main process starting inserts, PID: " + ProcessHandle.current().pid());
-        insertRecords(db1);
+        insertRecords(db1, 1000);
         System.out.println("Main process finished inserts");
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -106,6 +108,7 @@ class SonarLintDatabaseAutoServerDifferentProcessTest {
     cmd.add(mainClass);
     cmd.add(storageRoot.toString());
     cmd.add(String.valueOf(autoServer));
+    cmd.add(storageRoot.toString());
 
     var pb = new ProcessBuilder(cmd);
     pb.redirectErrorStream(true);

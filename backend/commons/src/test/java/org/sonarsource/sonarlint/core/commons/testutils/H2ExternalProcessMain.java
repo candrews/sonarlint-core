@@ -37,14 +37,15 @@ public class H2ExternalProcessMain {
 
   public static void main(String[] args) throws Exception {
     configureLogger();
-    var logger = SonarLintLogger.get();
-    var autoServer = args.length > 1 ? Boolean.parseBoolean(args[1]) : true;
+    var autoServer = args.length <= 1 || Boolean.parseBoolean(args[1]);
+    var path = args.length > 2 ? Path.of(args[2]) : Path.of(".");
     System.out.println("Starting H2ExternalProcessMain with autoServer=" + autoServer);
-    var initParams = new SonarLintDatabaseInitParams(Path.of("."), SonarLintDatabaseMode.FILE, autoServer);
+    System.out.println("External process PID: " + ProcessHandle.current().pid());
+    var initParams = new SonarLintDatabaseInitParams(path, SonarLintDatabaseMode.FILE, autoServer);
     var sonarLintDatabase = new SonarLintDatabase(initParams);
 
     ensureTestTableExists(sonarLintDatabase);
-    insertRecords(sonarLintDatabase);
+    insertRecords(sonarLintDatabase, 10000);
   }
 
   private static void configureLogger() {

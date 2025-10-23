@@ -23,27 +23,27 @@ import java.sql.SQLException;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 
 public class H2Utils {
-  private static final int COUNT = 1_000_000;
 
-  public static void insertRecords(SonarLintDatabase sonarLintDatabase) throws java.sql.SQLException {
+  public static void insertRecords(SonarLintDatabase sonarLintDatabase, int recCount) throws SQLException, InterruptedException {
     var insertSQL = "INSERT INTO TEST_TABLE (VAL) VALUES (?)";
     var countSQL = "SELECT COUNT(*) FROM TEST_TABLE";
-    try (var connection = sonarLintDatabase.getConnection()) {
-      try (var preparedInsertStatement = connection.prepareStatement(insertSQL);
-           var preparedCountStatement = connection.prepareStatement(countSQL)) {
-        for (int i = 1; i <= COUNT; i++) {
+    for (int i = 1; i <= recCount; i++) {
+      try (var connection = sonarLintDatabase.getConnection()) {
+        try (var preparedInsertStatement = connection.prepareStatement(insertSQL);
+             var preparedCountStatement = connection.prepareStatement(countSQL)) {
           preparedInsertStatement.setString(1, "Record " + i);
           preparedInsertStatement.executeUpdate();
           var countResultSet = preparedCountStatement.executeQuery();
-          if (i % 10000 == 0) {
+          if (i % 10 == 0) {
             System.out.println("Process " + ProcessHandle.current().pid() + " - Inserting record");
             if (countResultSet.next()) {
-              var count = countResultSet.getLong(1);
-              System.out.println("Inserted " + i + " records, total: " + count);
+              var totalCount = countResultSet.getLong(1);
+              System.out.println("Inserted " + i + " records, total: " + totalCount);
             }
           }
         }
       }
+      Thread.sleep(200);
     }
   }
 

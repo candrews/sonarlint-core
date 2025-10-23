@@ -26,7 +26,6 @@ import java.sql.SQLException;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.h2.jdbcx.JdbcConnectionPool;
-import org.h2.tools.Server;
 import org.jooq.DSLContext;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
@@ -35,7 +34,6 @@ public final class SonarLintDatabase {
 
   private final JdbcConnectionPool dataSource;
   private final DSLContext dsl;
-  private Server tcpServer;
 
   @Inject
   public SonarLintDatabase(SonarLintDatabaseInitParams sonarLintDatabaseInitParams) {
