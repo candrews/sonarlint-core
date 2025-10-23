@@ -20,9 +20,7 @@
 package org.sonarsource.sonarlint.core.commons.storage;
 
 import jakarta.inject.Inject;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import javax.sql.DataSource;
@@ -40,7 +38,7 @@ public final class SonarLintDatabase {
   private Server tcpServer;
 
   @Inject
-  public SonarLintDatabase(StorageInitParams storageInitParams) {
+  public SonarLintDatabase(SonarLintDatabaseInitParams sonarLintDatabaseInitParams) {
     JdbcConnectionPool ds;
     try {
       var mode = System.getProperty("sonarlint.db.mode", "file");
@@ -49,10 +47,13 @@ public final class SonarLintDatabase {
         // In-memory mode for tests: keep DB alive until JVM exits to allow multiple connections
         url = "jdbc:h2:mem:sonarlint;DB_CLOSE_DELAY=-1";
       } else {
-        var baseDir = storageInitParams.storageRoot().resolve("h2");
+        var baseDir = sonarLintDatabaseInitParams.storageRoot().resolve("h2");
         Files.createDirectories(baseDir);
         var dbBasePath = baseDir.resolve("sonarlint").toAbsolutePath();
-        url = "jdbc:h2:" + dbBasePath + ";AUTO_SERVER=TRUE";
+        url = "jdbc:h2:" + dbBasePath;
+        if (sonarLintDatabaseInitParams.autoServerModeEnabled()) {
+          url += ";AUTO_SERVER=TRUE";
+        }
       }
       LOG.debug("Initializing H2Database with URL {}", url);
       ds = JdbcConnectionPool.create(url, "sa", "");

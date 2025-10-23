@@ -52,7 +52,7 @@ import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetec
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringInitializationParams;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
-import org.sonarsource.sonarlint.core.commons.storage.StorageInitParams;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
@@ -260,13 +260,13 @@ public class SonarLintSpringAppConfig {
   }
 
   @Bean
-  StorageInitParams provideStorageInitParams(InitializeParams params) {
-    return new StorageInitParams(params.getStorageRoot(), SonarLintDatabaseMode.FILE, true);
+  SonarLintDatabaseInitParams provideStorageInitParams(InitializeParams params) {
+    return new SonarLintDatabaseInitParams(params.getStorageRoot(), SonarLintDatabaseMode.FILE, true);
   }
 
   @Bean(destroyMethod = "shutdown")
-  SonarLintDatabase provideSonarLintDatabase(StorageInitParams storageInitParams) {
-    return new SonarLintDatabase(storageInitParams);
+  SonarLintDatabase provideSonarLintDatabase(SonarLintDatabaseInitParams sonarLintDatabaseInitParams) {
+    return new SonarLintDatabase(sonarLintDatabaseInitParams);
   }
 
   @Bean

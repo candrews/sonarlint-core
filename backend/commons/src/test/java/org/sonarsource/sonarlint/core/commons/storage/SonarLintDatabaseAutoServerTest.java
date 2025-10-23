@@ -37,7 +37,7 @@ class SonarLintDatabaseAutoServerTest {
 
   @Test
   void auto_server_allows_second_simultaneous_connection() throws Exception {
-    var init = new StorageInitParams(tempDir, SonarLintDatabaseMode.FILE, true);
+    var init = new SonarLintDatabaseInitParams(tempDir, SonarLintDatabaseMode.FILE, true);
 
     // First DB instance opens the same file DB and creates a table + a row
     var db1 = new SonarLintDatabase(init);

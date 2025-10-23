@@ -20,16 +20,17 @@
 package org.sonarsource.sonarlint.core.commons.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.sonarsource.sonarlint.core.commons.testutils.H2Utils.ensureTestTableExists;
+import static org.sonarsource.sonarlint.core.commons.testutils.H2Utils.insertRecords;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,58 +45,74 @@ class SonarLintDatabaseAutoServerDifferentProcessTest {
   @TempDir
   Path tempDir;
 
-  // TODO make tests work
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   @DisplayName("Cross-process concurrent access to H2: green with AUTO_SERVER=TRUE, fail with AUTO_SERVER=FALSE")
   void auto_server_allows_second_connection_from_different_java_process(boolean autoServer) throws Exception {
-    var init = new StorageInitParams(tempDir, SonarLintDatabaseMode.FILE, autoServer);
+    var init = new SonarLintDatabaseInitParams(tempDir, SonarLintDatabaseMode.FILE, autoServer);
 
-    // First DB instance opens the file DB and creates a table + a row, then shuts down to simulate another process opening it
+    // First DB instance opens the file DB and creates a table + a row
     var db1 = new SonarLintDatabase(init);
-    try (var c1 = db1.getConnection(); var st1 = c1.createStatement()) {
-      st1.execute("CREATE TABLE IF NOT EXISTS T(ID INT PRIMARY KEY, VAL VARCHAR(255))");
-      st1.executeUpdate("MERGE INTO T (ID, VAL) KEY(ID) VALUES (1, 'from-db1')");
-    }
-    db1.shutdown();
+    ensureTestTableExists(db1);
 
-    // Launch a separate JVM that connects to the same DB and writes a new row
-    var result = runExternalProcess(tempDir);
-    assertThat(result.exitCode).withFailMessage(() -> "External process failed with code " + result.exitCode + "\nOutput:\n" + result.output).isZero();
+    AtomicReference<Process> processRef = new AtomicReference<>();
+    // Start external process while db1 is still open
+    var externalProcessStarter = new Thread(() -> {
+      try {
+        System.out.println("Main process starting inserts, PID: " + ProcessHandle.current().pid());
+        var process = startExternalProcess(tempDir, autoServer);
+        // Wait for external process to complete
+        processRef.set(process);
+        System.out.println("Main process finished inserts");
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+    externalProcessStarter.start();
 
-    // Verify from a fresh DB instance that the change written by the external process is persisted
-    var db2 = new SonarLintDatabase(init);
-    try (var c2 = db2.getConnection(); var ps = c2.prepareStatement("SELECT COUNT(*) FROM T"); ResultSet rs = ps.executeQuery()) {
-      assertThat(rs.next()).isTrue();
-      assertThat(rs.getInt(1)).isEqualTo(2);
+    // Insert records in parallel with the external process
+    var insertThread = new Thread(() -> {
+      try {
+        System.out.println("Main process starting inserts, PID: " + ProcessHandle.current().pid());
+        insertRecords(db1);
+        System.out.println("Main process finished inserts");
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+    insertThread.start();
+
+    while (processRef.get() == null) {
+      Thread.sleep(100);
     }
-    db2.shutdown();
+    var processResult = waitForProcess(processRef.get());
+
+    if( autoServer ) {
+      assertThat(processResult.exitCode).isZero();
+    } else {
+      assertThat(processResult.exitCode).isNotZero();
+    }
   }
 
-  private static ProcessResult runExternalProcess(Path storageRoot) throws Exception {
+  private static Process startExternalProcess(Path storageRoot, boolean autoServer) throws Exception {
     var javaBin = Path.of(System.getProperty("java.home"), "bin", isWindows() ? "java.exe" : "java").toString();
     var classpath = System.getProperty("surefire.test.class.path", System.getProperty("java.class.path"));
-    var mainClass = "org.sonarsource.sonarlint.core.commons.storage.H2ExternalProcessMain";
+    var mainClass = "org.sonarsource.sonarlint.core.commons.testutils.H2ExternalProcessMain";
 
     List<String> cmd = new ArrayList<>();
     cmd.add(javaBin);
     cmd.add("-cp");
     cmd.add(classpath);
-    // Propagate AUTO_SERVER flag to child JVM to keep behavior consistent
-    var autoServerProp = System.getProperty("sonarlint.db.autoServer");
-
     cmd.add(mainClass);
     cmd.add(storageRoot.toString());
-
-    if (autoServerProp != null) {
-      // Prepend JVM arg for system property
-      cmd.add(1, "-Dsonarlint.db.autoServer=" + autoServerProp);
-    }
+    cmd.add(String.valueOf(autoServer));
 
     var pb = new ProcessBuilder(cmd);
     pb.redirectErrorStream(true);
-    var process = pb.start();
+    return pb.start();
+  }
 
+  private static ProcessResult waitForProcess(Process process) throws Exception {
     var sb = new StringBuilder();
     try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
       String line;

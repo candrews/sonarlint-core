@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.StorageInitParams;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
 import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -68,7 +68,7 @@ class AiCodeFixServiceTest {
   @Test
   void getFeature_reads_from_h2_repository() {
     // Arrange: real H2 database and repository
-    db = new SonarLintDatabase(new StorageInitParams(tempDir, SonarLintDatabaseMode.FILE, true));
+    db = new SonarLintDatabase(new SonarLintDatabaseInitParams(tempDir, SonarLintDatabaseMode.FILE, true));
     var repo = new AiCodeFixRepository(db);
 
     var connectionId = "conn-1";
