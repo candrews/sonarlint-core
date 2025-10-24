@@ -50,6 +50,10 @@ public final class SonarLintDatabase {
         var dbBasePath = baseDir.resolve("sonarlint").toAbsolutePath();
         url = "jdbc:h2:" + dbBasePath;
         if (sonarLintDatabaseInitParams.autoServerModeEnabled()) {
+          // Ensure H2 AUTO_SERVER binds and advertises loopback to allow local cross-process connections reliably
+          if (System.getProperty("h2.bindAddress") == null || System.getProperty("h2.bindAddress").isBlank()) {
+            System.setProperty("h2.bindAddress", "127.0.0.1");
+          }
           url += ";AUTO_SERVER=TRUE";
         }
       }

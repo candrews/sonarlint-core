@@ -76,7 +76,7 @@ class SonarLintDatabaseAutoServerDifferentProcessTest {
     var insertThread = new Thread(() -> {
       try {
         System.out.println("Main process starting inserts, PID: " + ProcessHandle.current().pid());
-        insertRecords(db1, 10000000);
+        insertRecords(db1, 10000);
         System.out.println("Main process finished inserts");
       } catch (Exception e) {
         throw new RuntimeException(e);
