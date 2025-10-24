@@ -27,11 +27,11 @@ public class H2Utils {
   public static void insertRecords(SonarLintDatabase sonarLintDatabase, int recCount) throws SQLException, InterruptedException {
     var insertSQL = "INSERT INTO TEST_TABLE (VAL) VALUES (?)";
     var countSQL = "SELECT COUNT(*) FROM TEST_TABLE";
-    for (int i = 1; i <= recCount; i++) {
-      try (var connection = sonarLintDatabase.getConnection()) {
-        try (var preparedInsertStatement = connection.prepareStatement(insertSQL);
-             var preparedCountStatement = connection.prepareStatement(countSQL)) {
-          preparedInsertStatement.setString(1, "Record " + i);
+    try (var connection = sonarLintDatabase.getConnection()) {
+      try (var preparedInsertStatement = connection.prepareStatement(insertSQL);
+           var preparedCountStatement = connection.prepareStatement(countSQL)) {
+        for (int i = 1; i <= recCount; i++) {
+          preparedInsertStatement.setString(1, "External Record " + i);
           preparedInsertStatement.executeUpdate();
           var countResultSet = preparedCountStatement.executeQuery();
           if (i % 10 == 0) {
@@ -43,7 +43,7 @@ public class H2Utils {
           }
         }
       }
-      Thread.sleep(200);
+      System.out.println("Process " + ProcessHandle.current().pid() + " - Releasing connection");
     }
   }
 

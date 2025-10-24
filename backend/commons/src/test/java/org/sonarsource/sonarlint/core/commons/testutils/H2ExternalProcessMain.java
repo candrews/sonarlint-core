@@ -45,7 +45,7 @@ public class H2ExternalProcessMain {
     var sonarLintDatabase = new SonarLintDatabase(initParams);
 
     ensureTestTableExists(sonarLintDatabase);
-    insertRecords(sonarLintDatabase, 10000);
+    insertRecords(sonarLintDatabase, 1000);
   }
 
   private static void configureLogger() {
