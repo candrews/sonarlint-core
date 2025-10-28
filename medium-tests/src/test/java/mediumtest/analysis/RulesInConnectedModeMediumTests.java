@@ -131,7 +131,7 @@ class RulesInConnectedModeMediumTests {
       .withSensor(ActiveRulesDumpingSensor.class)
       .generate(baseDir);
     var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID)
+      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().start())
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
       .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
       .withExtraEnabledLanguagesInConnectedMode(Language.PHP)
